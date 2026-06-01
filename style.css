@@ -1,4 +1,3 @@
-/* 1. LAYER DEFINITION */
 :root {
     --bg-color: #121a14;
     --accent-green: #29b874;
@@ -244,7 +243,6 @@ nav a:hover { color: var(--accent-green); }
   }
 }
 
-/* Mobile Responsive */
 @media (max-width: 768px) {
   header {
     flex-wrap: wrap;
