@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>More - Plant Store</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <style>
+        :root { 
+            --main: #49C583; /* Змінив колір під стилістику рослин */
+            --dark: #0e0e10; 
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--dark);
+            font-family: 'Inter', sans-serif; color: #fff;
+            overflow: hidden;
+        }
+
+        #bg-canvas-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; pointer-events: none;
+        }
+
+        .dot-grid__canvas { width: 100%; height: 100%; display: block; }
+
+        .btn-back {
+            position: fixed; top: 30px; left: 30px; z-index: 100;
+            display: flex; align-items: center; gap: 8px;
+            text-decoration: none; background: rgba(0,0,0,0.5); color: #fff;
+            padding: 12px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.2);
+            font-size: 14px; font-weight: 600; text-transform: uppercase;
+            transition: 0.3s; backdrop-filter: blur(5px);
+        }
+        .btn-back:hover { 
+            background: rgba(73, 197, 131, 0.1); 
+            border-color: var(--main); 
+            color: var(--main); 
+        }
+    </style>
+</head>
+<body>
+
+<a href="index.html" class="btn-back">
+    <i class="fas fa-chevron-left"></i> ПОВЕРНУТИСЯ
+</a>
+
+<div id="bg-canvas-container">
+    <canvas class="dot-grid__canvas" id="dotCanvas"></canvas>
+</div>
+
+<script>
+// Скрипт для анімації точок
+const config = {
+    dotSize: 4, gap: 20, baseColor: "#2F293A", activeColor: "#49C583",
+    proximity: 120, speedTrigger: 100, returnDuration: 1.5
+};
+const canvas = document.getElementById('dotCanvas');
+const ctx = canvas.getContext('2d');
+let dots = [];
+let pointer = { x: -1000, y: -1000, lastX: 0, lastY: 0, lastTime: 0 };
+
+function buildGrid() {
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * dpr;
+    canvas.height = window.innerHeight * dpr;
+    ctx.scale(dpr, dpr);
+    const cell = config.dotSize + config.gap;
+    const cols = Math.ceil(window.innerWidth / cell) + 1;
+    const rows = Math.ceil(window.innerHeight / cell) + 1;
+    dots = [];
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            dots.push({ cx: x * cell, cy: y * cell, xOffset: 0, yOffset: 0 });
+        }
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    dots.forEach(dot => {
+        const dx = dot.cx - pointer.x;
+        const dy = dot.cy - pointer.y;
+        const dsq = dx * dx + dy * dy;
+        ctx.beginPath();
+        ctx.arc(dot.cx + dot.xOffset, dot.cy + dot.yOffset, config.dotSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = dsq < (config.proximity ** 2) ? config.activeColor : config.baseColor;
+        ctx.fill();
+    });
+    requestAnimationFrame(draw);
+}
+
+window.addEventListener('mousemove', (e) => {
+    const now = performance.now();
+    const curX = e.clientX, curY = e.clientY;
+    pointer.x = curX; pointer.y = curY;
+    const dt = now - pointer.lastTime || 16;
+    const vx = ((curX - pointer.lastX) / dt) * 1000;
+    const vy = ((curY - pointer.lastY) / dt) * 1000;
+    if (Math.hypot(vx, vy) > config.speedTrigger) {
+        dots.forEach(dot => {
+            if (Math.hypot(dot.cx - curX, dot.cy - curY) < config.proximity) {
+                gsap.killTweensOf(dot);
+                gsap.to(dot, {
+                    xOffset: (dot.cx - curX) * 0.4, yOffset: (dot.cy - curY) * 0.4,
+                    duration: 0.3, onComplete: () => {
+                        gsap.to(dot, { xOffset: 0, yOffset: 0, duration: config.returnDuration, ease: "elastic.out(1, 0.6)" });
+                    }
+                });
+            }
+        });
+    }
+    pointer.lastX = curX; pointer.lastY = curY; pointer.lastTime = now;
+});
+
+window.addEventListener('resize', buildGrid);
+buildGrid(); draw();
+</script>
+</body>
+</html>
